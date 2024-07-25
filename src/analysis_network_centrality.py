@@ -16,6 +16,7 @@ import networkx as nx
 g = nx.Graph()
 
 # Set up your dataframe(s) -> the df that's output to a CSV should include at least the columns 'left_actor_name', '<->', 'right_actor_name'
+imdb_movie_df = pd.DataFrame()
 
 
 with open() as in_file:
