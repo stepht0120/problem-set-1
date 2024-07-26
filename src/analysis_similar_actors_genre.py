@@ -32,15 +32,15 @@ from datetime import datetime
 
 def build_genre_feature_matrix(file_path):
     """
-    Builds a feature matrix where rows correspond to actors and columns represent genres.
+    builds a feature matrix where rows correspond to actors and columns represent genres.
 
-    Parameters:
+    parameters:
     file_path (str): Path to the IMDb movie dataset JSON file.
 
-    Returns:
-    pd.DataFrame: Feature matrix of actors and their genre appearances.
+    returns:
+    pd.DataFrame: feature matrix of actors and their genre appearances.
     """
-    # Read the JSON file and extract actors and genres
+    # read the JSON file and extract actors and genres
     actors_genres = {}
 
     with open(file_path, 'r') as in_file:
@@ -58,54 +58,54 @@ def build_genre_feature_matrix(file_path):
                         actors_genres[actor_id][genre] = 0
                     actors_genres[actor_id][genre] += 1
 
-    # Convert to DataFrame
+    # convert to DataFrame
     genre_feature_matrix = pd.DataFrame.from_dict(actors_genres, orient='index').fillna(0)
 
     return genre_feature_matrix
 
 def find_similar_actors(genre_feature_matrix, query_actor_id, query_actor_name):
     """
-    Finds the top 10 actors most similar to the query actor based on genre appearances.
+    finds the top 10 actors most similar to the query actor based on genre appearances.
 
-    Parameters:
+    parameters:
     genre_feature_matrix (pd.DataFrame): Feature matrix of actors and their genre appearances.
     query_actor_id (str): Actor ID of the query actor.
     query_actor_name (str): Actor name of the query actor.
 
-    Returns:
+    returns:
     pd.DataFrame: DataFrame of the top 10 similar actors.
     """
-    # Select the query actor's row
+    # select the query actor's row
     query_actor_row = genre_feature_matrix.loc[query_actor_id].values.reshape(1, -1)
 
-    # Calculate cosine distances
+    # calculate cosine distances
     distances = cosine_distances(query_actor_row, genre_feature_matrix.values).flatten()
 
-    # Create a DataFrame for distances
+    # create a DataFrame for distances
     distances_df = pd.DataFrame({
         'actor_id': genre_feature_matrix.index,
         'actor_name': genre_feature_matrix['actor_name'],
         'distance': distances
     }).set_index('actor_id')
 
-    # Sort by distance and select top 10
+    # sort by distance and select top 10
     top_10_similar_actors = distances_df.nsmallest(11, 'distance').iloc[1:11]
 
     return top_10_similar_actors
 
-# Build the genre feature matrix
-file_path = 'imbd_movie_data.json'  # Replace with your file path
+# build the genre feature matrix
+file_path = 'imbd_movie_data.json'
 genre_feature_matrix = build_genre_feature_matrix(file_path)
 
-# Find similar actors to Chris Hemsworth
+# find similar actors to Chris Hemsworth
 query_actor_id = 'nm1165110'  # Chris Hemsworth's actor ID
 query_actor_name = 'Chris Hemsworth'
 top_10_similar_actors = find_similar_actors(genre_feature_matrix, query_actor_id, query_actor_name)
 
-# Print the top 10 similar actors
+# print the top 10 similar actors
 print(top_10_similar_actors)
 
-# Output the top 10 similar actors to a CSV
+# output the top 10 similar actors to a CSV
 current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
 output_file = f'/mnt/data/similar_actors_genre_{current_datetime}.csv'
 top_10_similar_actors.to_csv(output_file, index=False)
