@@ -14,56 +14,73 @@ import pandas as pd
 import networkx as nx
 from datetime import datetime
 
-# Build the graph
-g = nx.Graph()
+def build_graph_and_extract_metrics(file_path):
+    """
+    Builds a graph from the IMDb movie dataset and extracts centrality metrics.
 
-# Set up your dataframe(s) -> the df that's output to a CSV should include at least the columns 'left_actor_name', '<->', 'right_actor_name'
-df_data = []
+    Parameters:
+    file_path (str): Path to the IMDb movie dataset JSON file.
 
-with open() as in_file:
-    # Don't forget to comment your code
-    for line in in_file:
-        # Don't forget to include docstrings for all functions
+    Returns:
+    pd.DataFrame: DataFrame containing the centrality metrics.
+    """
+    # Build the graph
+    g = nx.Graph()
 
-        # Load the movie from this line
-        this_movie = json.loads(line)
-            
-        # Create a node for every actor
-        actors = this_movie.get('actors', [])
-        num_actors = len(actors)
+    # Prepare the DataFrame for output
+    df_data = []
 
-        for i in range(num_actors):
-            for j in range(i + 1, num_actors):
-                left_actor_id, left_actor_name = actors[i]
-                right_actor_id, right_actor_name = actors[j]
+    # Read the JSON file and build the graph
+    with open(file_path, 'r') as in_file:
+        for line in in_file:
+            # Load the movie from this line
+            this_movie = json.loads(line)
 
-                # Get the current weight, if it exists
-                if g.has_edge(left_actor_name, right_actor_name):
-                    g[left_actor_name][right_actor_name]['weight'] += 1
-                else:
-                    g.add_edge(left_actor_name, right_actor_name, weight=1)
+            # Create a node for every actor and add edges between them
+            actors = this_movie.get('actors', [])
+            num_actors = len(actors)
+            for i in range(num_actors):
+                for j in range(i + 1, num_actors):
+                    left_actor_id, left_actor_name = actors[i]
+                    right_actor_id, right_actor_name = actors[j]
 
-                # Add data to the DataFrame
-                df_data.append([left_actor_name, '<->', right_actor_name])
+                    # Get the current weight, if it exists
+                    if g.has_edge(left_actor_name, right_actor_name):
+                        g[left_actor_name][right_actor_name]['weight'] += 1
+                    else:
+                        g.add_edge(left_actor_name, right_actor_name, weight=1)
 
-        # add the actor to the graph    
-        # Iterate through the list of actors, generating all pairs
-        ## Starting with the first actor in the list, generate pairs with all subsequent actors
-        ## then continue to second actor in the list and repeat
-        
-imdb_movie_df = pd.DataFrame(df_data, columns=['left_actor_name', '<->', 'right_actor_name'])
+                    # Add data to the DataFrame
+                    df_data.append([left_actor_name, '<->', right_actor_name])
 
-# Print the info below
-print("Nodes:", len(g.nodes))
+    # Convert the data to a DataFrame
+    imdb_movie_df = pd.DataFrame(df_data, columns=['left_actor_name', '<->', 'right_actor_name'])
 
-#Print the 10 the most central nodes
-print("Top 10 nodes by degree centrality:")
-top_10_degree = sorted(degree_centrality.items(), key=lambda item: item[1], reverse=True)[:10]
-for node, centrality in top_10_degree:
-    print(f"{node}: {centrality}")
+    # Compute centrality metrics
+    degree_centrality = nx.degree_centrality(g)
+    betweenness_centrality = nx.betweenness_centrality(g)
+    closeness_centrality = nx.closeness_centrality(g)
 
-# Output the final dataframe to a CSV named 'network_centrality_{current_datetime}.csv' to `/data`
-current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
-output_file = f'/mnt/data/network_centrality_{current_datetime}.csv'
-imdb_movie_df.to_csv(output_file, index=False)
+    # Print the info
+    print("Nodes:", len(g.nodes))
 
+    # Print the 10 most central nodes
+    print("Top 10 nodes by degree centrality:")
+    top_10_degree = sorted(degree_centrality.items(), key=lambda item: item[1], reverse=True)[:10]
+    
+    for node, centrality in top_10_degree:
+        print(f"{node}: {centrality}")
+
+    # Output the final DataFrame to a CSV
+    current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = f'/mnt/data/network_centrality_{current_datetime}.csv'
+    imdb_movie_df.to_csv(output_file, index=False)
+
+    return imdb_movie_df
+
+# Call the function with the path to your JSON file
+file_path = 'imbd_movie_data.json'  # Replace with your file path
+imdb_movie_df = build_graph_and_extract_metrics(file_path)
+
+# Display the DataFrame
+imdb_movie_df.head()
